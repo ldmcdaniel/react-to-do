@@ -6,37 +6,52 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      urls: [],
-      url: '',
+      linkList: [],
+      htmlData: '',
+      originalUrl: '',
     };
     this.submitUrl = this.submitUrl.bind(this);
     this.handleUrl = this.handleUrl.bind(this);
-    this.clearUrl = this.clearUrl.bind(this);
+    this.resetState = this.resetState.bind(this);
+    this.createMarkup = this.createMarkup.bind(this);
   }
   submitUrl(e) {
     e.preventDefault();
-    fetch(this.state.url)
+    this.fetchUrlData();
+  }
+  fetchUrlData() {
+    fetch(this.state.originalUrl, { 'x-requested-with': 'emma-code-challenge' })
     .then((response) => response.text())
     .then((data) => {
-      console.log(data);
-      const dataArray = Object.values(data);
-      return dataArray.map((url) => {
-        const urls = this.state.urls;
-        urls.push(url);
-        this.setState({ urls: urls });
-      });
+      this.setState({ htmlData: data });
+      this.setLinkList();
     })
     .catch((error) => console.log(error));
   }
-  handleUrl(e) {
-    this.setState({ url: e.target.value });
+  setLinkList() {
+    const aTags = document.getElementById('hidden-html').getElementsByTagName('a');
+    const tagsArray = Array.from(aTags).map((url) => {
+      return url.getAttribute("href");
+    });
+    this.setState({ linkList: tagsArray });
   }
-  clearUrl(e) {
-    this.setState({ url: '' });
+  createMarkup(element) {
+    return { __html: element };
+  }
+  handleUrl(e) {
+    this.setState({ originalUrl: e.target.value });
+  }
+  resetState() {
+    this.setState({ originalUrl: '' });
+    this.setState({ htmlData: '' });
+    this.setState({ linkList: [] });
   }
   render() {
-    const urlsArray = this.state.urls;
-    const urls = urlsArray.map((url) => <li><a className="tag is-success" href={url}>{url}</a></li> );
+    const linkListArray = this.state.linkList;
+    const urls = linkListArray.map((url, index) =>
+      <div className="column" key={ index }>
+        <a className="button is-large is-info" href={ url } target="_blank">Test Link: { url }</a>
+      </div> );
     return (
       <div className="App columns">
         <div className="column"></div>
@@ -48,7 +63,7 @@ class App extends Component {
                 className="input"
                 type="text"
                 placeholder="https://"
-                value={ this.state.url }
+                value={ this.state.originalUrl }
                 onChange={ this.handleUrl }
               />
             </div>
@@ -58,12 +73,13 @@ class App extends Component {
               <button className="button is-primary" onClick={ this.submitUrl }>Submit</button>
             </div>
             <div className="control">
-              <button className="button is-link">Cancel</button>
+              <button className="button is-link" onClick={ this.resetState }>Cancel</button>
             </div>
           </div>
           <div className="content">
-            <h1>URLs found on {this.state.url} </h1>
-            <ul>{urls}</ul>
+            <h1>URLs found on: { this.state.originalUrl } </h1>
+            <div id="hidden-html" className="is-hidden" dangerouslySetInnerHTML={ this.createMarkup(this.state.htmlData) }></div>
+            <div className="column">{ urls }</div>
           </div>
         </div>
         <div className="column"></div>
